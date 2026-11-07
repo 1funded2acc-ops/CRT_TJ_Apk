@@ -29,6 +29,22 @@ jobs:
       - name: Build APK
         run: gradle assembleDebug
 
+      - name: Verify APK
+        run: |
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          echo "APK file details:"
+          ls -lh "$APK"
+          echo "Checking APK archive:"
+          unzip -t "$APK"
+          echo "APK contents:"
+          unzip -l "$APK"
+          echo "Checking package information:"
+          AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt | sort -V | tail -n 1)
+          "$AAPT" dump badging "$APK"
+          echo "Checking APK signature:"
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -n 1)
+          "$APKSIGNER" verify --verbose --print-certs "$APK"
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
