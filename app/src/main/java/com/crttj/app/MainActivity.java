@@ -17,7 +17,10 @@ public class MainActivity extends Activity {
     LinearLayout root;
     SharedPreferences prefs;
     JSONArray trades;
+
     Uri selectedImage;
+    ImageView selectedPreview;
+    TextView selectedImageLabel;
 
     int bg = Color.rgb(10, 17, 35);
     int card = Color.rgb(23, 35, 61);
@@ -30,29 +33,42 @@ public class MainActivity extends Activity {
     @Override
     public void onCreate(Bundle b) {
         super.onCreate(b);
+
         getWindow().setStatusBarColor(bg);
         getWindow().setNavigationBarColor(bg);
+        getWindow().getDecorView().setBackgroundColor(bg);
+        getWindow().getDecorView().setSystemUiVisibility(0);
+
         prefs = getSharedPreferences("CRT_TJ", MODE_PRIVATE);
         loadTrades();
         showDashboard();
     }
 
+    int dp(int value) {
+        return (int) (value * getResources()
+            .getDisplayMetrics().density + 0.5f);
+    }
+
     void loadTrades() {
         try {
-            trades = new JSONArray(prefs.getString("trades", "[]"));
+            trades = new JSONArray(
+                prefs.getString("trades", "[]")
+            );
         } catch (Exception e) {
             trades = new JSONArray();
         }
     }
 
     void saveTrades() {
-        prefs.edit().putString("trades", trades.toString()).apply();
+        prefs.edit()
+            .putString("trades", trades.toString())
+            .apply();
     }
 
     GradientDrawable shape(int color, int radius) {
         GradientDrawable d = new GradientDrawable();
         d.setColor(color);
-        d.setCornerRadius(radius);
+        d.setCornerRadius(dp(radius));
         return d;
     }
 
@@ -61,7 +77,7 @@ public class MainActivity extends Activity {
         t.setText(value);
         t.setTextSize(size);
         t.setTextColor(color);
-        t.setPadding(8, 8, 8, 8);
+        t.setPadding(dp(8), dp(8), dp(8), dp(8));
         return t;
     }
 
@@ -71,16 +87,19 @@ public class MainActivity extends Activity {
         return t;
     }
 
-    Button btn(String value) {
+    Button btn(String value, int color) {
         Button b = new Button(this);
         b.setText(value);
         b.setTextColor(white);
         b.setTextSize(14);
         b.setAllCaps(false);
-        b.setBackgroundTintList(
-            android.content.res.ColorStateList.valueOf(blue)
-        );
+        b.setBackground(shape(color, 14));
+        b.setPadding(dp(12), dp(8), dp(12), dp(8));
         return b;
+    }
+
+    Button btn(String value) {
+        return btn(value, blue);
     }
 
     LinearLayout vertical() {
@@ -91,9 +110,13 @@ public class MainActivity extends Activity {
 
     void setup(String page) {
         ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.setBackgroundColor(bg);
+
         root = vertical();
-        root.setPadding(18, 16, 18, 24);
+        root.setPadding(dp(18), dp(16), dp(18), dp(24));
         root.setBackgroundColor(bg);
+
         scroll.addView(root);
         setContentView(scroll);
 
@@ -111,18 +134,19 @@ public class MainActivity extends Activity {
 
         LinearLayout.LayoutParams np =
             new LinearLayout.LayoutParams(0, -2, 1);
-        np.setMargins(12, 0, 0, 0);
+        np.setMargins(dp(12), 0, 0, 0);
         header.addView(names, np);
-        header.addView(txt(page, 12, muted));
 
+        header.addView(txt(page, 12, muted));
         root.addView(header);
         root.addView(txt(" ", 5, muted));
     }
 
     void addStat(LinearLayout row, String title,
                  String value, int color) {
+
         LinearLayout box = vertical();
-        box.setPadding(12, 14, 12, 14);
+        box.setPadding(dp(12), dp(14), dp(12), dp(14));
         box.setBackground(shape(card, 18));
 
         box.addView(txt(title, 12, muted));
@@ -130,18 +154,21 @@ public class MainActivity extends Activity {
 
         LinearLayout.LayoutParams p =
             new LinearLayout.LayoutParams(0, -2, 1);
-        p.setMargins(4, 5, 4, 5);
+
+        p.setMargins(dp(4), dp(5), dp(4), dp(5));
         row.addView(box, p);
     }
 
-    EditText field(String hint, int inputType, boolean multiline) {
+    EditText field(String hint, int inputType,
+                   boolean multiline) {
+
         EditText e = new EditText(this);
         e.setHint(hint);
         e.setHintTextColor(muted);
         e.setTextColor(white);
         e.setTextSize(15);
         e.setInputType(inputType);
-        e.setPadding(14, 12, 14, 12);
+        e.setPadding(dp(14), dp(12), dp(14), dp(12));
         e.setBackground(shape(card, 14));
 
         if (multiline) {
@@ -153,8 +180,10 @@ public class MainActivity extends Activity {
 
         LinearLayout.LayoutParams p =
             new LinearLayout.LayoutParams(-1, -2);
-        p.setMargins(0, 5, 0, 10);
+
+        p.setMargins(0, dp(5), 0, dp(10));
         e.setLayoutParams(p);
+
         return e;
     }
 
@@ -169,6 +198,7 @@ public class MainActivity extends Activity {
             if (t == null) continue;
 
             String r = t.optString("result");
+
             if (r.equals("Win")) wins++;
             else if (r.equals("Loss")) losses++;
             else if (r.equals("Break Even")) be++;
@@ -176,6 +206,7 @@ public class MainActivity extends Activity {
 
         int total = trades.length();
         int decided = wins + losses;
+
         double rate = decided == 0 ? 0 :
             wins * 100.0 / decided;
 
@@ -187,6 +218,7 @@ public class MainActivity extends Activity {
 
         LinearLayout row1 = new LinearLayout(this);
         root.addView(row1);
+
         addStat(row1, "TOTAL TRADES", "" + total, white);
         addStat(row1, "WIN RATE",
             String.format(java.util.Locale.US, "%.1f%%", rate),
@@ -194,11 +226,13 @@ public class MainActivity extends Activity {
 
         LinearLayout row2 = new LinearLayout(this);
         root.addView(row2);
+
         addStat(row2, "WINS", "" + wins, green);
         addStat(row2, "LOSSES", "" + losses, red);
 
         LinearLayout row3 = new LinearLayout(this);
         root.addView(row3);
+
         addStat(row3, "BREAK EVEN", "" + be, blue);
 
         root.addView(txt("QUICK ACTIONS", 14, muted));
@@ -218,42 +252,75 @@ public class MainActivity extends Activity {
     }
 
     void chooseImage() {
-        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        Intent intent =
+            new Intent(Intent.ACTION_OPEN_DOCUMENT);
+
         intent.setType("image/*");
         intent.addCategory(Intent.CATEGORY_OPENABLE);
+
+        intent.addFlags(
+            Intent.FLAG_GRANT_READ_URI_PERMISSION |
+            Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+        );
+
         startActivityForResult(intent, 101);
     }
 
     @Override
     protected void onActivityResult(int requestCode,
             int resultCode, Intent data) {
+
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == 101 && resultCode == RESULT_OK
-                && data != null && data.getData() != null) {
+        if (requestCode == 101 &&
+            resultCode == RESULT_OK &&
+            data != null &&
+            data.getData() != null) {
+
             selectedImage = data.getData();
 
             try {
-                getContentResolver().takePersistableUriPermission(
-                    selectedImage,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                );
+                int flags = data.getFlags() &
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION;
+
+                if (flags != 0) {
+                    getContentResolver()
+                        .takePersistableUriPermission(
+                            selectedImage, flags
+                        );
+                }
             } catch (Exception ignored) {}
 
-            Toast.makeText(this,
-                "Screenshot selected",
-                Toast.LENGTH_SHORT).show();
+            if (selectedImageLabel != null) {
+                selectedImageLabel.setText(
+                    "Screenshot selected ✓"
+                );
+                selectedImageLabel.setTextColor(green);
+            }
 
-            showAddTrade();
+            if (selectedPreview != null) {
+                selectedPreview.setVisibility(View.VISIBLE);
+                selectedPreview.setImageURI(selectedImage);
+            }
+
+            Toast.makeText(this,
+                "Screenshot selected successfully!",
+                Toast.LENGTH_SHORT).show();
         }
     }
 
     void showAddTrade() {
-        setup("NEW TRADE");
         selectedImage = null;
+        selectedPreview = null;
+        selectedImageLabel = null;
+
+        setup("NEW TRADE");
 
         root.addView(bold("Record Your Trade", 22, white));
-        root.addView(txt("Enter your setup details below.", 13, muted));
+        root.addView(txt(
+            "Enter your setup details below.",
+            13, muted
+        ));
 
         EditText pair = field("Pair (e.g. EURUSD)", 1, false);
         EditText direction = field("Direction (Buy / Sell)", 1, false);
@@ -270,20 +337,62 @@ public class MainActivity extends Activity {
         root.addView(txt("TRADE RESULT", 13, muted));
 
         Spinner result = new Spinner(this);
+        result.setBackground(shape(card, 14));
+        result.setPopupBackgroundDrawable(shape(card, 14));
+        result.setPadding(dp(12), dp(8), dp(12), dp(8));
+
         String[] choices = {"Win", "Loss", "Break Even"};
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(
-            this,
-            android.R.layout.simple_spinner_item,
-            choices
-        );
+
+        ArrayAdapter<String> adapter =
+            new ArrayAdapter<String>(
+                this,
+                android.R.layout.simple_spinner_item,
+                choices
+            ) {
+
+                @Override
+                public View getView(int position,
+                        View convertView, ViewGroup parent) {
+
+                    TextView v = (TextView) super.getView(
+                        position, convertView, parent
+                    );
+
+                    v.setTextColor(white);
+                    v.setTextSize(15);
+                    return v;
+                }
+
+                @Override
+                public View getDropDownView(int position,
+                        View convertView, ViewGroup parent) {
+
+                    TextView v = (TextView) super.getDropDownView(
+                        position, convertView, parent
+                    );
+
+                    v.setTextColor(white);
+                    v.setBackgroundColor(card);
+                    v.setPadding(
+                        dp(14), dp(12), dp(14), dp(12)
+                    );
+
+                    return v;
+                }
+            };
+
         adapter.setDropDownViewResource(
             android.R.layout.simple_spinner_dropdown_item
         );
+
         result.setAdapter(adapter);
+
         root.addView(result);
 
-        EditText notes = field("CRT Analysis / Notes",
-            1, true);
+        EditText notes = field(
+            "CRT Analysis / Notes", 1, true
+        );
+
         root.addView(notes);
 
         root.addView(txt("TRADE SCREENSHOT", 14, muted));
@@ -292,16 +401,33 @@ public class MainActivity extends Activity {
         root.addView(photo);
         photo.setOnClickListener(v -> chooseImage());
 
-        if (selectedImage != null) {
-            TextView selected = txt(
-                "Screenshot selected ✓", 13, green);
-            root.addView(selected);
-        }
+        selectedImageLabel = txt(
+            "No screenshot selected", 13, muted
+        );
+
+        root.addView(selectedImageLabel);
+
+        selectedPreview = new ImageView(this);
+        selectedPreview.setVisibility(View.GONE);
+        selectedPreview.setScaleType(
+            ImageView.ScaleType.CENTER_CROP
+        );
+        selectedPreview.setBackground(shape(card, 14));
+
+        LinearLayout.LayoutParams previewParams =
+            new LinearLayout.LayoutParams(
+                -1, dp(180)
+            );
+
+        previewParams.setMargins(0, dp(8), 0, dp(10));
+
+        root.addView(selectedPreview, previewParams);
 
         Button save = btn("SAVE TRADE");
         root.addView(save);
 
         save.setOnClickListener(v -> {
+
             if (pair.getText().toString().trim().isEmpty()) {
                 pair.setError("Enter trading pair");
                 return;
@@ -309,20 +435,30 @@ public class MainActivity extends Activity {
 
             try {
                 JSONObject trade = new JSONObject();
+
                 trade.put("pair", pair.getText().toString());
                 trade.put("direction", direction.getText().toString());
                 trade.put("entry", entry.getText().toString());
                 trade.put("stop", stop.getText().toString());
                 trade.put("target", target.getText().toString());
-                trade.put("result", result.getSelectedItem().toString());
+
+                trade.put(
+                    "result",
+                    result.getSelectedItem().toString()
+                );
+
                 trade.put("notes", notes.getText().toString());
+
                 trade.put("date",
                     java.text.DateFormat.getDateTimeInstance()
-                    .format(new java.util.Date()));
+                    .format(new java.util.Date())
+                );
 
-                trade.put("image",
+                trade.put(
+                    "image",
                     selectedImage == null ? "" :
-                    selectedImage.toString());
+                    selectedImage.toString()
+                );
 
                 trades.put(trade);
                 saveTrades();
@@ -345,6 +481,29 @@ public class MainActivity extends Activity {
         back.setOnClickListener(v -> showDashboard());
     }
 
+    void deleteTrade(int index) {
+
+        new AlertDialog.Builder(
+            this, AlertDialog.THEME_DEVICE_DEFAULT_DARK
+        )
+        .setTitle("Delete Trade?")
+        .setMessage(
+            "Are you sure you want to delete this trade? " +
+            "This action cannot be undone."
+        )
+        .setPositiveButton("DELETE", (dialog, which) -> {
+            trades.remove(index);
+            saveTrades();
+            showHistory();
+
+            Toast.makeText(this,
+                "Trade deleted",
+                Toast.LENGTH_SHORT).show();
+        })
+        .setNegativeButton("CANCEL", null)
+        .show();
+    }
+
     void showHistory() {
         loadTrades();
         setup("HISTORY");
@@ -363,14 +522,18 @@ public class MainActivity extends Activity {
         }
 
         for (int i = trades.length() - 1; i >= 0; i--) {
+
             JSONObject t = trades.optJSONObject(i);
             if (t == null) continue;
 
+            final int index = i;
+
             LinearLayout box = vertical();
-            box.setPadding(14, 14, 14, 14);
+            box.setPadding(dp(14), dp(14), dp(14), dp(14));
             box.setBackground(shape(card, 18));
 
             String result = t.optString("result");
+
             int resultColor = result.equals("Win") ? green :
                 result.equals("Loss") ? red : blue;
 
@@ -405,13 +568,21 @@ public class MainActivity extends Activity {
             if (!image.isEmpty()) {
                 try {
                     ImageView preview = new ImageView(this);
+
                     preview.setImageURI(Uri.parse(image));
                     preview.setScaleType(
                         ImageView.ScaleType.CENTER_CROP
                     );
+
+                    preview.setBackground(shape(bg, 14));
+
                     LinearLayout.LayoutParams ip =
-                        new LinearLayout.LayoutParams(-1, 190);
-                    ip.setMargins(0, 10, 0, 8);
+                        new LinearLayout.LayoutParams(
+                            -1, dp(190)
+                        );
+
+                    ip.setMargins(0, dp(10), 0, dp(8));
+
                     preview.setLayoutParams(ip);
                     box.addView(preview);
 
@@ -421,21 +592,35 @@ public class MainActivity extends Activity {
                                 Intent.ACTION_VIEW,
                                 Uri.parse(image)
                             );
+
                             open.setDataAndType(
                                 Uri.parse(image), "image/*"
                             );
+
                             open.addFlags(
                                 Intent.FLAG_GRANT_READ_URI_PERMISSION
                             );
+
                             startActivity(open);
+
                         } catch (Exception ignored) {}
                     });
+
                 } catch (Exception ignored) {}
             }
 
+            Button delete = btn("DELETE THIS TRADE", red);
+            box.addView(delete);
+
+            delete.setOnClickListener(v ->
+                deleteTrade(index)
+            );
+
             LinearLayout.LayoutParams bp =
                 new LinearLayout.LayoutParams(-1, -2);
-            bp.setMargins(0, 8, 0, 12);
+
+            bp.setMargins(0, dp(8), 0, dp(12));
+
             root.addView(box, bp);
         }
 
